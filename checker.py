@@ -1,7 +1,29 @@
 "平成26年度版"
-
+import ConfigParser
 import requests
 from bs4 import BeautifulSoup
+
+
+# 科目毎にほぼ同じなので科目毎にクラスにしてやる
+# ひとつだけ卒業研究が入るので、継承する
+
+
+class Subject:
+    unit = 0
+    border = 0
+    representation = ""
+
+    def __init__(self, unit, border, string):
+        self.unit = unit
+        self.border = border
+        self.representation = string
+
+    def __str__(self):
+        return self.representation
+
+    def check(self):
+        "足りない分を計算する"
+        return max(self.unit - self.border, 0)
 
 
 class Special_Subject:
@@ -92,12 +114,52 @@ def table_dict(bs_table):
             td_list))
 
 
+# table[1]
+def extract_subjects(bs_table):
+    def to_string(elem):
+        if elem.find('th') is not None:
+            text = elem.find('th').text
+        elif elem.find('td') is not None:
+            text = elem.find('td').text
+        else:
+            raise Exception("Not th or td")
+
+        return text.replace(' ', '').replace('【', '[').replace('】', ']')
+
+    return list(map(lambda x: to_string(x), bs_table.find_all('tr')))[1:]
+
+
+def subjects_to_dict(subjects):
+    dict = {}
+    tmp_list = []
+    subject_sort = ""
+
+    for sub in subjects:
+        if sub[0] == '[':
+            dict[subject_sort] = tmp_list
+            tmp_list = []
+            subject_sort = sub[1:-1]
+        else:
+            tmp_list.append(sub)
+
+    del(dict[''])
+    return dict
+
+
 def get_summary_score(url):
     bs = BeautifulSoup(requests.get(url).text, "html.parser")
     return Subject(table_dict(bs.find_all('table')[2]))
 
 
+def parse_syllabus(url):
+    bs = BeautifulSoup(requests.get(url).text, "html.parser")
+    
+
+
 def main(url):
+    conf = ConfigParser.SafeConfigParser()
+    conf.read('setting.conf')
+
     print("足りない分")
 
     for subject, score in get_summary_score(url).check():
