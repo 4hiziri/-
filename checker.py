@@ -1,8 +1,7 @@
 "平成26年度版"
-import ConfigParser
+from configparser import ConfigParser
 import requests
 from bs4 import BeautifulSoup
-
 
 # 科目毎にほぼ同じなので科目毎にクラスにしてやる
 # ひとつだけ卒業研究が入るので、継承する
@@ -142,7 +141,7 @@ def subjects_to_dict(subjects):
         else:
             tmp_list.append(sub)
 
-    del(dict[''])
+    del (dict[''])
     return dict
 
 
@@ -151,9 +150,46 @@ def get_summary_score(url):
     return Subject(table_dict(bs.find_all('table')[2]))
 
 
+def split_subject(table):
+    special_basic_subject = '専門基礎科目'
+    special_subject = '専門科目'
+    special_related_subject = '専門関連科目'
+
+    trs = table.find_all('tr')
+    length = len(trs)
+
+    i = 0
+    while i < length:
+        if trs[i].text.strip() == special_basic_subject:
+            i += 1
+            break
+
+    def append_loop(i, stopper, lst):
+        while i < length:
+            if trs[i].text.strip() == stopper:
+                i += 1
+                break
+            else:
+                lst.append(trs[i])
+                i += 1
+
+        return i
+
+    special_basic_subject_list = []
+    i = append_loop(i, special_subject, special_basic_subject_list)
+
+    special_subject_list = []
+    i = append_loop(i, special_related_subject, special_subject_list)
+
+    special_related_subject_list = []
+    i = append_loop(i, '', special_related_subject_list)
+
+    return (special_basic_subject_list, special_subject_list,
+            special_related_subject_list)
+
+
 def parse_syllabus(url):
     bs = BeautifulSoup(requests.get(url).text, "html.parser")
-    
 
 
 def main(url):
