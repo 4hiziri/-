@@ -150,46 +150,32 @@ def get_summary_score(url):
     return Subject(table_dict(bs.find_all('table')[2]))
 
 
-def split_subject(table):
-    special_basic_subject = '専門基礎科目'
-    special_subject = '専門科目'
-    special_related_subject = '専門関連科目'
-
+def table_to_trs(table):
     trs = table.find_all('tr')
-    length = len(trs)
+    return trs[2:]
 
-    i = 0
-    while i < length:
-        if trs[i].text.strip() == special_basic_subject:
-            i += 1
-            break
 
-    def append_loop(i, stopper, lst):
-        while i < length:
-            if trs[i].text.strip() == stopper:
-                i += 1
-                break
-            else:
-                lst.append(trs[i])
-                i += 1
+def split_subject(tables):
+    print(len(tables))
+    return (table_to_trs(tables[0]), table_to_trs(tables[1]),
+            table_to_trs(tables[2]))
 
-        return i
 
-    special_basic_subject_list = []
-    i = append_loop(i, special_subject, special_basic_subject_list)
+def regulate_subjects(subject_list):
+    import re
 
-    special_subject_list = []
-    i = append_loop(i, special_related_subject, special_subject_list)
+    def regulate(tr):
+        tds = tr.find_all('td')
+        subject_name = tds[1].text
+        subject_info = re.search(r'\(.*\)', tds[4].text).group()[1:-1]
+        return (subject_name, subject_info)
 
-    special_related_subject_list = []
-    i = append_loop(i, '', special_related_subject_list)
-
-    return (special_basic_subject_list, special_subject_list,
-            special_related_subject_list)
+    return list(map(regulate, subject_list))
 
 
 def parse_syllabus(url):
     bs = BeautifulSoup(requests.get(url).text, "html.parser")
+    return list(map(regulate_subjects, split_subject(bs.find_all('table'))))
 
 
 def main(url):
